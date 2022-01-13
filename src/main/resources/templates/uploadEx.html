@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>파일 업로드 연습</title>
+</head>
+<script
+        src="https://code.jquery.com/jquery-3.5.1.min.js"
+        integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
+        crossorigin="anonymous"></script>
+
+</script>
+<body>
+
+    <input type="file" name="uploadFiles" multiple>
+    <button class="uploadBtn">업로드</button>
+
+    <!-- 업로드한 이미지 출력되는 부분 -->
+    <div class="uploadResult">
+    </div>
+    <!-- 업로드한 이미지 출력되는 부분 -->
+
+    <script>
+
+        $('.uploadBtn').click(function(){
+
+            //FormData 객체 : <form></form> 안에 데이터를 넣음으로써 ajax로 폼 전송을 할 수 있도록 도와주는 역할을 하는 객체
+            //보통은 ajax로 폼 전송 할 일이 없는데(거의 json구조로 전송하니까) 이미지를 전송할 때는 폼 객체 자체를 넘겨야 하기 때문에 필요
+            //html에 form태그가 없을 때 이렇게 새로운 formData 객체 생성
+            //html에 form태그가 있는 경우, 제이쿼리나 자바스크립트로 가져온다
+            //var formData = new formData(document.getElementById("폼아이디"));
+
+            //form 객체 생성
+            var formData = new FormData();
+
+            var inputFile = $("input[type='file']");
+
+            var files = inputFile[0].files;
+
+            for(var i=0;i<files.length;i++){
+
+                console.log(files[i]);
+
+                //append()로 key-value값을 하나씩 추가해 준다
+                //★이때 name값(key값)이랑 맵핑된 메서드 매개변수 이름이 같아야 함..★
+                formData.append("uploadFiles",files[i]);
+            }
+
+            //실제 업로드 작업 부분
+            $.ajax({
+                url: '/uploadAjax',
+                processData: false,
+                contentType: false,
+                data: formData,
+                type: 'POST',
+                dataType: 'json',
+                success: function(result){
+                      console.log(result);
+                      //업로드한 이미지 보여주는 기능을 가진 함수
+                      showUploadImages(result);
+
+                },
+                error : function(jqXHR, textStatus, errorThrown){
+                    console.log(textStatus);
+                }
+
+            });//end ajax
+        });//end click()
+
+        //업로드한 이미지 보여주는 함수
+        function showUploadImages(arr){
+
+            console.log(arr);
+
+            var divArea = $(".uploadResult");
+
+            var str = "";
+
+            for(var i = 0;i<arr.length;i++){
+                str += "<div>";
+                str += "<img src='/display?fileName="+arr[i].thumbnailURL+"'>";
+                str += "<button class='removeBtn' data-name='"+arr[i].imageURL+"'>삭제하기</button>";
+                str += "</div>";
+
+            }
+
+            divArea.append(str);
+        }
+
+
+        //삭제 버튼 클릭 시,
+        //업로드 결과로 만들어지는 div는 동적으로 생성되기 때문에 바로 클릭 이벤트를 처리할 수 없으므로,
+        //위힘하는 방식으로 이벤트를 처리한다
+        $(".uploadResult").on("click",".removeBtn",function(e){
+
+            var target = $(this);
+            var fileName = target.data("name");
+            var targetDiv = $(this).closest("div");
+
+            console.log(fileName);
+
+            //삭제작업은 POST방식으로 호출
+            $.post('/removeFile', {fileName: fileName}, function(result){
+
+                console.log("삭제 후 >>>" + result);
+
+                if(result === true){
+                    targetDiv.remove();
+                }
+            })
+        });//end on()
+
+    </script>
+
+</body>
+</html>

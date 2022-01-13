@@ -38,6 +38,9 @@ dependencies {
 
 	// JAVA8 버전에 등장한 LocalDate, LocalDateTime을 편하게 사용하기 위해서
 	implementation 'org.thymeleaf.extras:thymeleaf-extras-java8time:3.0.4.RELEASE'
+
+	//섬네일 이미지 만들어주는 라이브러리(Thumbnailator)
+	implementation group: 'net.coobird', name: 'thumbnailator', version: '0.4.12'
 }
 
 test {
