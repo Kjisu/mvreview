@@ -28,10 +28,11 @@
             </div>
         </div>
 
-        <!--파일 업로드시, 섬네일 보여지는 곳-->
+        <!--섬네일 이미지의 data-속성들이 <input type=hidden> 태그로 생성되는 곳-->
         <div class="box">
 
         </div>
+
         <!--등록버튼-->
         <button type="submit" class="btn btn-primary">등록</button>
     </form>
@@ -201,6 +202,33 @@
                     targetLi.remove();
                 }
             })
+      });//end on()
+
+
+      //submit버튼 클릭시, form태그 안 <div class="box">에 'data-'속성의 값들(=이미지 정보)을 붙이는 작업
+      $(".btn-primary").on("click",function(e){
+
+         e.preventDefault();//submit 잠시 중단 !
+
+         //데이터 넘어가기 전에 이미지 데이터를 input hidden에 담아서 form태그 안에 붙이기
+         //이미지 데이터까지 같이 넘어가게 하기 위함
+
+         var str = "";
+
+         $(".uploadResult li").each(function(i,obj){
+
+            var target = $(obj);
+
+            str += "<input type=hidden name='imageDTOList["+i+"].imgName' value='"+target.data('name')+"'>";
+            str += "<input type=hidden name='imageDTOList["+i+"].path' value='"+target.data('path')+"'>";
+            str += "<input type=hidden name='imageDTOList["+i+"].uuid' value='"+target.data('uuid')+"'>";
+
+         });//end each()
+
+         $(".box").append(str);//form태그에 붙임
+
+         $("form").submit();
+
       });//end on()
 
 
