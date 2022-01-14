@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<th:block th:replace="~{/layout/basic :: setContent(~{this::content})}">
+<head>
+    <meta charset="UTF-8">
+    <title>영화 등록 페이지</title>
+</head>
+<body>
+<th:block th:fragment="content">
+
+  <h1>영화 등록 페이지</h1>
+
+    <!--등록폼-->
+    <form th:action="@{/movie/register}" th:method="post">
+
+        <!--제목입력-->
+        <div class="form-group">
+            <label>제목</label>
+            <input type="text" name="title" class="form-control">
+        </div>
+
+        <!--파일 업로드-->
+        <div class="form-group fileForm">
+            <label>영화 사진 업로드</label>
+            <div class="custom-file">
+                <input type="file" class="custom-file-input files" id="fileInput" multiple>
+                <label class="custom-file-label" data-browse="Browse"></label>
+            </div>
+        </div>
+
+        <!--파일 업로드시, 섬네일 보여지는 곳-->
+        <div class="box">
+
+        </div>
+        <!--등록버튼-->
+        <button type="submit" class="btn btn-primary">등록</button>
+    </form>
+
+
+    <!--썸네일 보이는 영역의 css-->
+    <style>
+    .uploadResult {
+      width: 100%;
+      background-color: gray;
+      margin-top: 10px;
+    }
+    .uploadResult ul {
+      display: flex;
+      flex-flow: row;
+      justify-content: center;
+      align-items: center;
+      vertical-align: top;
+      overflow: auto;
+    }
+    .uploadResult ul li {
+      list-style: none;
+      padding: 10px;
+      margin-left: 2em;
+    }
+    .uploadResult ul li img {
+      width: 100px;
+    }
+  </style>
+
+    <!--썸네일 이미지 보여지는 곳 -->
+    <div class="uploadResult">
+        <ul>
+
+        </ul>
+    </div>
+
+
+
+    <script th:inline="javascript">
+
+        $(document).ready(function(e){
+
+        //1.첨부파일 확장자 체크
+
+            //유효성 식
+            var regex = new RegExp("(.*?)\.(exe|sh|zip|alz|tiff)$");
+            //업로드 가능한 최대 용량
+            var maxSize = 10485760; //10MB
+
+            //유효성 체크(파일 확장자, 업로드 가능 용량) 함수
+            function checkExtension(fileName, fileSize){
+
+                //용량 체크
+                if(fileSize >= maxSize){
+                    alert('파일 사이즈 초과입니다.');
+                    return false;
+                }
+
+                //확장자 체크
+                if(regex.test(fileName)){
+                    alert("해당 종류의 파일은 업로드 할 수 없습니다.");
+                    return false;
+                }
+
+                return true;
+
+            }//end checkExtension()
+
+
+        //파일 선택시, 자동으로 change()이벤트 발생하도록 처리
+        $(".custom-file-input").on("change", function(){
+
+            //파일 이름만 쪼개서 저장
+            var fileName = $(this).val().split("\\").pop();
+            $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
+
+            //이미지 업로드를 위해 파일 객체 생성
+            var formData = new FormData();
+
+            var inputFile = $(this);
+
+            var files = inputFile[0].files;//업로드한 파일들
+
+            var appended = false;//업로드 가능 여부 체크
+
+            for(var i=0;i<files.length;i++){
+
+                //파일 유효성 체크
+                if(!checkExtension(files[i].name,files[i].size)){
+                    return false;
+                }
+
+                console.log(files[i]);
+
+                //이미지 데이터, 폼 객체에 붙이기
+                formData.append("uploadFiles",files[i]);
+                appended = true;
+            }
+
+            //appended 값이 false라면 업로드하지 않는다
+            if(!appended){
+                return;
+            }
+
+            //???
+            for(var value of formData.values()){
+                console.log("???value = "+value);
+            }
+
+            //ajax 사용하여 이미지 업로드
+            $.ajax({
+                url: '/uploadAjax',
+                processData: false,
+                contentType: false,
+                data: formData,
+                type: 'POST',
+                dataType: 'json',
+                success: function(result){
+                    console.log("이미지 업로드 결과 >> "+result);
+                    showResult(result);//썸네일 띄우기
+                },
+                error: function(jqXHR, testStatus, errorThrown){
+                  console.log(testStatus);
+              }
+            });//end ajax
+
+        });//end on()
+
+
+        //이미지 업로드 후 섬네일 이미지 보여주는 함수
+        function showResult(uploadResultArr){
+
+            var uploadURL = $(".uploadResult ul");
+
+            var str = "";
+
+            $(uploadResultArr).each(function(i,obj){
+
+              //li태그의 data속성들은 <form>태그의 submit이 실행될 때 <form>태그의 내용물로 만들어져서 전송된다.
+              str += "<li data-name='"+obj.fileName+"' data-path='"+obj.folderPath+"' data-uuid='"+obj.uuid+"'>";
+              str += "<div>";
+              str += "<button type='button' data-file=\'"+obj.imageURL+"\'"
+              str += "class='btn-warning btn-sm'>X</button><br>";
+              str += "<img src='/display?fileName="+obj.thumbnailURL+"'>";
+              str += "</div>";
+              str += "</li>";
+
+            });//end each()
+
+            uploadURL.append(str);
+
+        }//end showResult()
+
+        //섬네일 이미지 삭제 버튼 클릭시, 이미지 삭제 작업 함수
+        $(".uploadResult").on("click","li button",function(e){
+
+        var target = $(this);
+        var targetFile = target.data("file");
+        var targetLi = target.closest("li");
+
+        $.post('/removeFile', {fileName: targetFile}, function(result){
+
+                console.log("섬네일 삭제 완료? >>>" + result);
+
+                if(result === true){
+                    targetLi.remove();
+                }
+            })
+      });//end on()
+
+
+
+        });//end ready()
+
+    </script>
+
+
+
+
+
+
+</th:block>
+</body>
+</th:block>
+</html>

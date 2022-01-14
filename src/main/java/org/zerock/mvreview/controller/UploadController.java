@@ -160,7 +160,7 @@ public class UploadController {
 
             //2.섬네일 파일 제거
             File thumbFile = new File(file.getParent(),"s_"+file.getName());
-            log.info(" =============== file.getParanet()>>" + file.getParent()); //D:\upload\2022\01\13
+            log.info(" =============== file.getParanet()>>" + file.getParent()); //D:/upload/2022/01/13 (실제로는 /가 \로 되어있음, 에러떠서 변경함)
             log.info("======= file.getName() >> "+file.getName()); //f4de1ec8-488c-4d99-a4cf-3297141ac3c1_����Ȩ.JPG
             result = thumbFile.delete();
 
