@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<th:block th:replace="~{/layout/basic :: setContent(~{this::content})}">
+<head>
+    <meta charset="UTF-8">
+    <title>영화 조회 페이지</title>
+</head>
+<body>
+<th:block th:fragment="content">
+
+    <script th:src="@{/starrr.js}"></script>
+    <link th:href="@{/css/starrr.css}" rel="stylesheet">
+    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+
+  <h1>영화 조회 페이지</h1>
+
+    <!--제목-->
+    <div class="form-group">
+        <label>제목</label>
+        <input type="text" name="title" class="form-control" th:value="${dto.title}" readonly>
+    </div>
+
+    <!--리뷰 갯수-->
+    <div class="form-group">
+        <label>리뷰 갯수</label>
+        <input type="text" name="reviewCnt" class="form-control" th:value="${dto.reviewCnt}" readonly>
+    </div>
+
+    <!--평점평균-->
+    <div class="form-group">
+        <label>평점평균</label>
+        <input type="text" name="avg" class="form-control" th:value="${dto.avg}" readonly>
+    </div>
+
+    <!--이미지-->
+    <div class="uploadResult">
+        <ul>
+            <li th:each="movieImage:${dto.imageDTOList}" th:data-file="${movieImage.getThumbnailURL()}">
+                <img th:if="${movieImage.path != null}"
+                     th:src="|/display?fileName=${movieImage.getThumbnailURL()}|">
+            </li>
+        </ul>
+    </div>
+
+    <!--이미지 CSS-->
+    <style>
+    .uploadResult {
+      width: 100%;
+      background-color: gray;
+      margin-top: 10px;
+    }
+    .uploadResult ul {
+      display: flex;
+      flex-flow: row;
+      justify-content: center;
+      align-items: center;
+      vertical-align: top;
+      overflow: auto;
+    }
+    .uploadResult ul li {
+      list-style: none;
+      padding: 10px;
+      margin-left: 2em;
+    }
+    .uploadResult ul li img {
+      width: 100px;
+    }
+  </style>
+
+    <!--리뷰 보기 버튼 -->
+    <button type="button" class="btn btn-primary">
+        리뷰 갯수 <span class="badge badge-light">[[${dto.reviewCnt}]]</span>
+    </button>
+
+</th:block>
+</body>
+</th:block>
+</html>

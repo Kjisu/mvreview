@@ -2,6 +2,8 @@ package org.zerock.mvreview.service;
 
 import org.zerock.mvreview.dto.MovieDTO;
 import org.zerock.mvreview.dto.MovieImageDTO;
+import org.zerock.mvreview.dto.PageRequestDTO;
+import org.zerock.mvreview.dto.PageResultDTO;
 import org.zerock.mvreview.entity.Movie;
 import org.zerock.mvreview.entity.MovieImage;
 
@@ -14,8 +16,14 @@ import java.util.stream.Collectors;
 public interface MovieService {
 
 
-    /////////////////////////////////////////////////////////////////////// 등록 처리 작업 : 등록된 게시글 번호를 반환
+    /////////////////////////////////////////////////////////////////////// 등록 작업 : 등록된 게시글 번호를 반환
     Long register(MovieDTO movieDTO);
+
+    /////////////////////////////////////////////////////////////////////// 목록 작업 : PageResultDTO 리턴
+    PageResultDTO<MovieDTO,Object[]> getList(PageRequestDTO dto);
+
+    /////////////////////////////////////////////////////////////////////// 조회 작업
+    MovieDTO getMovie(Long mno);
 
 
     /////////////////////////////////////////////////////////////////////// dto -> entity로 변환
@@ -68,5 +76,40 @@ public interface MovieService {
 
     }
 
+    /////////////////////////////////////////////////////////////////////// entity -> dto 변환
+    //JPA에서 나오는 엔티티 객체들과 Double, Long 등의 데이터를 MovieDTO로 변환
+    default MovieDTO entityToDTO(Movie movie, List<MovieImage> movieImages,Double avg,Long reviewCnt){
+
+        //Movie엔티티
+        MovieDTO movieDTO = MovieDTO.builder()
+                .mno(movie.getMno())
+                .title(movie.getTitle())
+                .regDate(movie.getRegDate())
+                .modDate(movie.getModDate())
+                .build();
+
+        //이미지 데이터 movieImageDTO에 담기
+        List<MovieImageDTO> movieImageDTOS = movieImages.stream().map(movieImage -> {
+
+            MovieImageDTO movieImageDTO = MovieImageDTO.builder()
+                    .path(movieImage.getPath())
+                    .imgName(movieImage.getImgName())
+                    .uuid(movieImage.getUuid())
+                    .build();
+            return movieImageDTO;
+
+        }).collect(Collectors.toList());
+
+        System.out.println("???????????"+movieImageDTOS);
+
+        //movieImageDTO 리스트, 평균평점, 리뷰갯수 담기
+        movieDTO.setImageDTOList(movieImageDTOS);
+        movieDTO.setAvg(avg);
+        movieDTO.setReviewCnt(reviewCnt.intValue());
+
+        System.out.println("???????"+movieDTO);
+
+        return movieDTO;
+    }
 
 }

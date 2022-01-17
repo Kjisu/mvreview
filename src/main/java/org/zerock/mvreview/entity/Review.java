@@ -11,7 +11,7 @@ import javax.persistence.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Review extends Serializers.Base {
+public class Review extends BaseEntity {
 
     /*컬럼 : 리뷰번호(pk), 회원(fk), 영화(fk), 평점, 내용 */
 

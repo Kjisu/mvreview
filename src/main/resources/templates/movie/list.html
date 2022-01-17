@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<th:block th:replace="~{/layout/basic :: setContent(~{this::content})}">
+<head>
+    <meta charset="UTF-8">
+    <title>영화 목록 페이지</title>
+</head>
+<body>
+<th:block th:fragment="content">
+
+  <h1>영화 목록 페이지</h1>
+
+    <!--목록출력-->
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">제목</th>
+                <th scope="col">평점</th>
+                <th scope="col">등록일자</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="dto:${result.dtoList}">
+                <td scope="row">
+                    [[${dto.mno}]]
+                </td>
+                <td scope="row">
+                    <!--이미지-->
+                    <img th:if="${dto.imageDTOList.size()>0 && dto.imageDTOList[0].path != null}"
+                         th:src="|/display?fileName=${dto.imageDTOList[0].getThumbnailURL()}|">
+                    <!--제목-->
+                    <a th:href="@{/movie/read(mno=${dto.mno}, page=${result.page})}">[[${dto.title}]]</a>
+                    <!--리뷰수-->
+                    ------- [ [[${dto.reviewCnt}]] ]
+                </td>
+                <td scope="row">
+                    <!--평점평균-->
+                    <b>[[${dto.avg}]]</b>
+                </td>
+                <td scope="row">
+                    <!--등록일자-->
+                    [[${#temporals.format(dto.regDate,'yyyy/MM/dd')}]]
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+
+    <!--페이지 번호-->
+    <ul class="pagination h-100 justify-content-center align-items-center">
+        <li class="page-item" th:if="${result.prev}">
+            <a th:href="@{/movie/list(page=${result.start-1},type=${pageRequestDTO.type},keyword=${pageRequestDTO.keyword})}" tabindex="-1" class="page-link">
+                이전</a>
+        </li>
+        <li class="page-item" th:each="page:${result.pageList}" th:class=" 'page-item ' + ${result.page == page? 'active':''} ">
+            <a th:href="@{/movie/list(page=${page},type=${pageRequestDTO.type},keyword=${pageRequestDTO.keyword})}" class="page-link">
+                [[${page}]]</a>
+        </li>
+        <li class="page-item" th:if="${result.next}">
+            <a th:href="@{/movie/list(page=${result.end+1},type=${pageRequestDTO.type},keyword=${pageRequestDTO.keyword})}" tabindex="-1" class="page-link">
+                다음</a>
+        </li>
+    </ul>
+
+
+
+
+
+
+</th:block>
+</body>
+</th:block>
+</html>

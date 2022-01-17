@@ -91,5 +91,9 @@ public class MovieRepositoryTests {
     }
 
 
+    //영화 데이터 모두 삭제
+
+
+
 
 }
