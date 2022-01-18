@@ -35,7 +35,7 @@
     <!--이미지-->
     <div class="uploadResult">
         <ul>
-            <li th:each="movieImage:${dto.imageDTOList}" th:data-file="${movieImage.getThumbnailURL()}">
+            <li th:each="movieImage:${dto.imageDTOList}" th:data-file="${movieImage.getImageURL()}">
                 <img th:if="${movieImage.path != null}"
                      th:src="|/display?fileName=${movieImage.getThumbnailURL()}|">
             </li>
@@ -71,6 +71,280 @@
     <button type="button" class="btn btn-primary">
         리뷰 갯수 <span class="badge badge-light">[[${dto.reviewCnt}]]</span>
     </button>
+
+    <!--리뷰 등록 버튼-->
+    <button type="button" class="btn btn-info addReviewBtn">
+        리뷰 등록
+    </button>
+
+    <!--리뷰 리스트-->
+    <div class="list-group reviewList"></div>
+
+<!--모달창 2개-->
+    <!--모달창1 : 리뷰 작성 용도-->
+    <div class="reviewModal modal" tabindex="-1" role="dialog">
+        <div class="modal-content">
+            <!--section1 : 제목, 창닫기버튼-->
+            <div class="modal-header">
+                <h5 class="modal-title">영화 제목</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">X</span>
+                </button>
+            </div>
+            <!--section2: 작성자, 평점, 내용-->
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>작성자</label>
+                    <input type="text" name="mid" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>평점 <span class="grade"></span></label>
+                    <div class="starrr"></div>
+                </div>
+                <div class="form-group">
+                    <label>내용</label>
+                    <input type="text" name="text" class="form-control">
+                </div>
+            </div>
+            <!--section3 : 삭제,수정,등록,닫기 버튼-->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger removeBtn">삭제</button>
+                <button type="button" class="btn btn-warning modifyBtn">수정</button>
+                <button type="button" class="btn btn-primary reviewSaveBtn">등록</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">X</button>
+            </div>
+        </div>
+    </div>
+
+    <!--모달창2 : 이미지 원본 보여주기 용도-->
+    <div class="imageModal modal" tabindex="-2" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <!--헤더-->
+                <div class="modal-header">
+                    <h5 class="modal-title">이미지</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">X</span>
+                    </button>
+                </div>
+                <!--바디-->
+                <div class="modal-body">
+                </div>
+                <!--푸터-->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    $(document).ready(function(e){
+
+        var grade = 0;
+        var mno = [[${dto.mno}]];
+
+    //리뷰 리스트 함수 호출
+        getMovieReviews();
+
+    //별점 값이 변하는 이벤트
+        $('.starrr').starrr({
+            rating: grade,
+            change: function(e,value){
+                if(value){
+                    console.log(value);
+                    grade = value;
+                }
+            }
+        });//end starrr()
+
+    //페이지 로드시, 별점 라이브러리 테스트용
+        //$(".reviewModal").modal("show");
+
+    var reviewModal = $(".reviewModal");//리뷰 모달창
+    var inputMid = $("input[name='mid']");//작성자 아이디
+    var inputText = $("input[name='text']");//내용
+
+
+    //리뷰 등록 버튼 클릭시, 리뷰 등록창 보여주기
+        $(".addReviewBtn").click(function(){
+
+            inputMid.val("");//공백으로 만들기
+            inputText.val("");
+
+            //저장 버튼만 보이도록
+            $(".removeBtn, .modifyBtn, .btn-secondary").hide();
+
+            reviewModal.modal('show');
+
+        });//end click()
+
+
+    //작성한 리뷰 등록 (저장하기 버튼 클릭 시,,, )
+      $(".reviewSaveBtn").click(function(){
+
+          //ajax로 작성한 데이터(json형태로 만들어서) 전달
+          var data = {mno:mno, grade:grade, text:inputText.val(), mid: inputMid.val() };
+          console.log(data);
+
+          //ajax()
+          $.ajax({
+              url: '/review/'+mno,
+              type: "POST",
+              data: JSON.stringify(data),
+              contentType: "application/json; charset=utf-8",
+              dataType: "text",
+              success: function(result){
+
+                  console.log("result : "+ result);
+
+                  self.location.reload();//URL 다시 호출 ∵ 등록된 정보(별점,리뷰갯수)를 반영하기 위함
+              }
+          })
+
+          reviewModal.modal('hide');//모달창 끄기
+
+      });//end 저장하기 버튼 click()
+
+
+    //리뷰 목록 가져오는 함수 (페이지 로드되면 바로 가져오도록)
+        function getMovieReviews(){
+
+            //날짜 양식 format()
+            function formatTime(str){
+
+                var date = new Date(str);
+
+                return date.getFullYear() + '/' + (date.getMonth()+1) + '/' + date.getDate() + '/' +
+                        date.getHours() + ':' + date.getMinutes();
+            }
+
+    //리뷰 목록 가져오기 (ajax)
+        $.getJSON("/review/"+mno+"/all",function(arr){
+
+            var str = "";
+
+            $.each(arr,function(idx,review){
+
+                console.log("리뷰"+idx+"="+review);
+
+                str += '<div class="card-body" data-reviewnum='+review.reviewNum+' data-mid='+review.mid+'>';
+                str += '<h5 class="card-title">'+review.text+' <span> '+review.grade+'</span></h5>';
+                str += '<h6 class="card-subtitle mb-2 text-muted">'+review.nickName+'</h6>';
+                str += '<p class="card=text">'+formatTime(review.regDate)+'</p>';
+                str += '</div>';
+
+            });//end each()
+
+            $(".reviewList").html(str);
+
+        });//end getJSON()
+      }
+
+
+    //특정 리뷰 클릭 시, 모달창에서 보여주기
+        var reviewnum;
+        var state; //리뷰 번호 담을 변수(트리거에서 사용)
+
+        $(".reviewList").on("click",".card-body",function(){
+
+            //저장버튼 숨기기
+            $(".reviewSaveBtn").hide();
+            //삭제,수정버튼 보이기
+            $(".removeBtn, .modifyBtn").show();
+
+            //데이터 채워넣기
+            var targetReview = $(this);
+            //리뷰번호
+            reviewnum = targetReview.data("reviewnum");
+            //작성자id
+            inputMid.val(targetReview.data("mid"));
+            //내용
+            inputText.val(targetReview.find('.card-title').clone().children().remove().end().text());
+            //점수
+            grade = targetReview.find('.card-title span').html();
+            //중복 클릭시 별점 오류 방지
+            if(reviewnum == state){
+                //같은 리뷰 중복 클릭 -> 트라거 작동 X
+            }else{
+                //처음 클릭
+                $(".starrr a:nth-child("+grade+")").trigger('click');
+                state = reviewnum;//중복 여부 판단을 위해
+            }
+
+            //모달창 띄우기
+            $('.reviewModal').modal('show');
+
+        });//end on();
+
+
+
+    //리뷰 수정
+        $(".modifyBtn").on("click",function(){
+
+            //json형태로 넘길 데이터 객체 생성
+            var data = {reviewNum:reviewnum, mno:mno, grade:grade, text:inputText.val(), mid:inputMid.val() };
+
+            //데이터 넘기기 (ajax)
+            $.ajax({
+                url: '/review/'+mno+'/'+reviewnum,
+                type: "PUT",
+                data: JSON.stringify(data),
+                contentType: "application/json; charset=utf-8",
+                dataType: "text",
+                success: function(result){
+                    console.log("수정된 리뷰 번호 = "+result);
+                    self.location.reload();
+                }
+            })//end ajax()
+
+            //모달창 끄기
+            reviewModal.modal('hide');
+
+        });//end on()
+
+
+    //리뷰 삭제
+        $(".removeBtn").click(function(){
+
+            //ajax로 삭제 작업 처리
+            $.ajax({
+                url: '/review/'+mno+'/'+reviewnum,
+                type: 'DELETE',
+                contentType: 'application/json; charset=utf-8',
+                dataType: "text",
+                success: function(result){
+                    console.log("삭제된 리뷰 번호 >> "+result);
+                    self.location.reload();
+                }
+            })//end ajax()
+
+            //모달창 끄기
+            reviewModal.modal('hide');
+
+        });//end click()
+
+
+    //섬네일 클릭 시, 원본 이미지 보여주기
+        $(".uploadResult li").click(function(){
+
+            //클릭된 섬네일 이미지의 저장 경로 가져오기
+            var file = $(this).data("file");
+
+            console.log("섬네일 경로? 원본 이미지 경로? = "+file);
+
+            //모달창에 img태그 붙이기
+            $(".imageModal .modal-body").html("<img src='/display?fileName="+file+"' style='width:100%'>");
+
+            //이미지 모달창 띄우기
+            $(".imageModal").modal('show');
+
+        });//end click();
+
+
+
+ });//end ready()
+</script>
 
 </th:block>
 </body>
