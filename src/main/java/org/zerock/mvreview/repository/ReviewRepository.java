@@ -23,4 +23,11 @@ public interface ReviewRepository extends JpaRepository<Review,Long> {
     @Modifying //update나 delete를 사용하려면 반드시 필요
     @Query("delete from Review r where r.member = :member") //쿼리 안 적어도 되는데 그러면 비효율적임(delete 쿼리는 n번 실행함)
     void deleteByMember(Member member);
+
+
+    /////////////////////////////////////////////////////////////////// 특정 영화번호의 댓글 삭제 쿼리
+    @Query("delete from Review r where r.movie.mno =:mno")
+    @Modifying
+    void deleteByMno(Long mno);
+
 }

@@ -23,4 +23,10 @@ public class Movie extends BaseEntity{
 
     private String title;
 
+
+    //제목 수정
+    public void changeTitle(String title){
+        this.title = title;
+    }
+
 }

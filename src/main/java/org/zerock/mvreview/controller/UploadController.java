@@ -146,7 +146,7 @@ public class UploadController {
     }
 
 
-    ///////////////////////////////////////////////////////// 이미지 삭제 작업
+    ///////////////////////////////////////////////////////// 이미지 삭제 작업 (서버 폴더에서)
     @PostMapping("/removeFile")
     public ResponseEntity<Boolean> removeFile(String fileName){
 

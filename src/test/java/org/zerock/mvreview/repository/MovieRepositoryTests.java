@@ -7,6 +7,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.test.annotation.Commit;
+import org.springframework.transaction.annotation.Transactional;
 import org.zerock.mvreview.entity.Movie;
 import org.zerock.mvreview.entity.MovieImage;
 
@@ -90,8 +92,12 @@ public class MovieRepositoryTests {
         }
     }
 
+    @Test
+    void uuid(){
 
-    //영화 데이터 모두 삭제
+        movieImageRepository.deleteByUuid("a343e828-2b0a-44fd-83f1-fa26531e65b4");
+
+    }
 
 
 

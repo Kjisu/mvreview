@@ -2,10 +2,10 @@ package org.zerock.mvreview.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.hibernate.criterion.Order;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.zerock.mvreview.dto.MovieDTO;
 import org.zerock.mvreview.dto.PageRequestDTO;
 import org.zerock.mvreview.dto.PageResultDTO;
@@ -13,13 +13,13 @@ import org.zerock.mvreview.entity.Movie;
 import org.zerock.mvreview.entity.MovieImage;
 import org.zerock.mvreview.repository.MovieImageRepository;
 import org.zerock.mvreview.repository.MovieRepository;
+import org.zerock.mvreview.repository.ReviewRepository;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.IntStream;
 
 @Service
 @Log4j2
@@ -28,6 +28,7 @@ public class MovieServiceImpl implements MovieService{
 
     private final MovieRepository movieRepository;
     private final MovieImageRepository movieImageRepository;
+    private final ReviewRepository reviewRepository;
 
     //////////////////////////////////////////////////////////////////////////////// 등록 메서드
     @Override
@@ -64,9 +65,9 @@ public class MovieServiceImpl implements MovieService{
         //쿼리 실행
         Page<Object[]> result = movieRepository.getListPage(dto.getPageable(Sort.by("mno").descending()));
 
-
         //entity->dto변환 작업 담기
-        Function<Object[],MovieDTO> fn = (entity -> entityToDTO(
+        Function<Object[],MovieDTO> fn = (entity ->
+                entityToDTO(
                 (Movie)entity[0],(List<MovieImage>)(Arrays.asList((MovieImage)entity[1])),
                 (Double)entity[2],(Long)entity[3]));
 
@@ -102,4 +103,34 @@ public class MovieServiceImpl implements MovieService{
         //엔티티 -> dto 변환
         return entityToDTO(movieEntity,movieImageList,avg,reviewCnt);
     }
+
+    /////////////////////////////////////////////////////////////////////////////////// 삭제
+    @Override
+    @Transactional
+    public void remove(Long mno) {
+
+        log.info(">>>>>>>>>>>>> [S] remove()");
+
+        //fk데이터부터 삭제 (리뷰,영화이미지)
+        reviewRepository.deleteByMno(mno);
+        movieImageRepository.deleteByMno(mno);
+
+        //영화 게시글 삭제
+        movieRepository.deleteById(mno);
+
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////// 영화 이미지 삭제작업
+    @Override
+    public boolean removeImg(String uuid) {
+
+        log.info(">>>>>>>>>>>>> [S] remove()");
+
+        //uuid가 같은 영화 이미지 제거
+        movieImageRepository.deleteByUuid(uuid);
+
+        return true;
+    }
+
+
 }

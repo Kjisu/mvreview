@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<th:block th:replace="~{/layout/basic :: setContent(~{this::content})}">
+<head>
+    <meta charset="UTF-8">
+    <title>영화 수정 페이지</title>
+</head>
+<body>
+<th:block th:fragment="content">
+
+    <script th:src="@{/starrr.js}"></script>
+    <link th:href="@{/css/starrr.css}" rel="stylesheet">
+    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+
+  <h1>영화 수정 페이지</h1>
+
+    <form>
+
+        <input type="hidden" name="mno" th:value="${dto.mno}">
+        <input type="hidden" name="page" th:value="${pageRequestDTO.page}">
+        <input type="hidden" name="type" th:value="${pageRequestDTO.type}">
+        <input type="hidden" name="keyword" th:value="${pageRequestDTO.keyword}">
+
+        <!--제목-->
+        <div class="form-group">
+            <label>제목</label>
+            <input type="text" name="title" class="form-control" th:value="${dto.title}" >
+        </div>
+
+        <!--리뷰 갯수-->
+        <div class="form-group">
+            <label>리뷰 갯수</label>
+            <input type="text" name="reviewCnt" class="form-control" th:value="${dto.reviewCnt}" readonly>
+        </div>
+
+        <!--평점평균-->
+        <div class="form-group">
+            <label>평점평균</label>
+            <input type="text" name="avg" class="form-control" th:value="${dto.avg}" readonly>
+        </div>
+    </form>
+
+    <!--이미지-->
+    <div class="uploadResult">
+        <ul>
+            <li th:each="movieImage:${dto.imageDTOList}" th:data-file="${movieImage.getImageURL()}" th:data-uuid="${movieImage.uuid}">
+                <div>
+                    <button type="button" th:data-file="${movieImage.getImageURL()}" class="btn-warning btn-sm">X</button>
+                    <img th:if="${movieImage.path != null}"
+                         th:src="|/display?fileName=${movieImage.getThumbnailURL()}|">
+
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!--이미지 CSS-->
+    <style>
+    .uploadResult {
+      width: 100%;
+      background-color: gray;
+      margin-top: 10px;
+    }
+    .uploadResult ul {
+      display: flex;
+      flex-flow: row;
+      justify-content: center;
+      align-items: center;
+      vertical-align: top;
+      overflow: auto;
+    }
+    .uploadResult ul li {
+      list-style: none;
+      padding: 10px;
+      margin-left: 2em;
+    }
+    .uploadResult ul li img {
+      width: 100px;
+    }
+  </style>
+
+
+    <!--파일 업로드-->
+    <div class="form-group fileForm">
+        <label>사진 업로드</label>
+        <div class="custom-file">
+            <input type="file" class="custom-file-input files" id="fileInput" multiple>
+            <label class="custom-file-label" data-browse="Browse"></label>
+        </div>
+    </div>
+
+    <br>
+
+    <!--수정,삭제 버튼-->
+    <button type="button" class="btn btn-primary modifyBtn">수정하기</button>
+    <button type="button" class="btn btn-danger removeBtn">삭제</button>
+
+
+    <!--모달창 : 이미지 원본 보여주기 용도-->
+    <div class="imageModal modal" tabindex="-2" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <!--헤더-->
+                <div class="modal-header">
+                    <h5 class="modal-title">이미지</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">X</span>
+                    </button>
+                </div>
+                <!--바디-->
+                <div class="modal-body">
+                </div>
+                <!--푸터-->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    $(document).ready(function(e){
+
+
+    //섬네일 클릭 시, 원본 이미지 보여주기
+        $(".uploadResult li").click(function(){
+
+            //클릭된 섬네일 이미지의 저장 경로 가져오기
+            var file = $(this).data("file");
+
+            console.log("섬네일 경로? 원본 이미지 경로? = "+file);
+
+            //모달창에 img태그 붙이기
+            $(".imageModal .modal-body").html("<img src='/display?fileName="+file+"' style='width:100%'>");
+
+            //이미지 모달창 띄우기
+            $(".imageModal").modal('show');
+
+        });//end click();
+
+
+
+    var actionForm = $("form");
+
+
+    //삭제버튼 클릭시,
+        $(".removeBtn").click(function(){
+
+            if(!confirm("정말로 삭제하시겠습니까?")){
+                return;
+            }
+
+            //모든 이미지 삭제
+            deleteServerImg();
+
+            actionForm.attr("action","/movie/remove");
+            actionForm.attr("method","post");
+            actionForm.submit();
+
+        });//end click()
+
+
+    //수정 버튼 클릭시,
+        $('.modifyBtn').click(function(){
+
+            if(!confirm('수정하시겠습니까?')){
+                return;
+            }
+
+            //+
+
+            actionForm.attr("action","/movie/remove")
+                      .attr("method","post")
+                      .submit();
+
+
+        });
+
+    //섬네일 이미지 삭제 버튼 클릭 시, 이미지 데이터(디비) + 서버 폴더 이미지 삭제
+    $(".uploadResult").on("click","li button",function(e){
+
+        var target = $(this);
+        var targetFile = target.data("file");
+        var targetLi = target.closest("li");
+        var targetUuid = target.data("uuid");
+
+        //디비에 있는 이미지 데이터 삭제
+        removeImgData(targetFile);
+
+        //서버폴더에 있는 이미지 삭제
+        removeImgAtStorage(targetFile, targetLi);
+
+      });//end on()
+
+
+
+    //(함수) 서버 폴더 내의 모든 이미지(2개 이상) 삭제
+    function deleteImgInFolder(){
+
+        $(".uploadResult li").each(function(index){
+
+            console.log($(this).data("file"));
+
+            var targetFile = $(this).data("file");
+
+            $.post('/removeFile', {fileName: targetFile}, function(result){
+
+                console.log("서버폴더에서 이미지들 삭제 완료? >>>" + result);
+
+            })
+        });
+
+      }
+
+
+    //(함수) 서버폴더에서 이미지 1개 삭제
+    function removeImgAtStorage(targetFile, targetLi){
+
+        $.post('/removeFile', {fileName: targetFile}, function(result){
+
+                console.log("섬네일 삭제 완료? >>>" + result);
+
+                if(result === true){
+                    targetLi.remove();
+                }
+            })
+    }
+
+    //(함수) 디비에서 이미지 데이터 삭제
+    function removeImgData(targetUuid){
+
+        $.post('/movie/removeImg', {uuid: targetUuid}, function(result){
+
+                console.log("이미지 데이터 삭제 완료? >>>" + result);
+
+            })
+
+
+
+
+    }
+
+
+
+
+
+
+ });//end ready()
+</script>
+
+</th:block>
+</body>
+</th:block>
+</html>
