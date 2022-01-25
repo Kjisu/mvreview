@@ -13,6 +13,9 @@ import org.zerock.mvreview.dto.PageRequestDTO;
 import org.zerock.mvreview.dto.PageResultDTO;
 import org.zerock.mvreview.service.MovieService;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+
 @Controller
 @RequestMapping("/movie")
 @Log4j2
@@ -79,6 +82,17 @@ public class MovieController {
 
         log.info(">>>>>>>>>>>>>>>>>>>>>> [C] modify() ");
 
+        log.info("update ing .... data = "+dto);
+        //MovieDTO(mno=154, title=11111, imageDTOList=[MovieImageDTO(uuid=null, imgName=null, path=null), MovieImageDTO(uuid=9d9c1f7b-5aba-4e95-b3e5-68f8e368b633, img
+
+        Long result = movieService.update(dto);
+
+        //상세 페이지 정보 추가
+        redirectAttributes.addAttribute("mno",dto.getMno());
+        redirectAttributes.addAttribute("page",pageRequestDTO.getPage());
+        redirectAttributes.addAttribute("type",pageRequestDTO.getType());
+        redirectAttributes.addAttribute("keyword",pageRequestDTO.getKeyword());
+
         return "redirect:/movie/read";
     }
 
@@ -101,18 +115,25 @@ public class MovieController {
     //////////////////////////////////////////////// 이미지 데이터 삭제 작업 요청
     @PostMapping("/removeImg")
     @ResponseBody
-    public ResponseEntity<Boolean> removeImg(String uuid){
+    public ResponseEntity<Boolean> removeImg(String targetFile){
 
         log.info(">>>>>>>>>>>>>>>>>>>>>> [C] removeImg() ");
-        log.info("uuid is ..... >>>> "+uuid);
+        log.info("넘어온 데이터 is ..... >>>> "+targetFile);
 
-        //넘어온 uuid는 uuid_이미지이름.jpg로 이루어져 있기 때문에 uuid만 잘라주기
-        String[] arr = uuid.split("_");
-        String nuuid = arr[0];
-        log.info(">>>>>>>>>>>>>>>>>>>>> arr[0] = "+nuuid);
+        //넘어온 파일 이름 인코딩
+        try {
+            String encodedName = URLDecoder.decode(targetFile,"UTF-8");
 
-        //이미지 테이블에서 같은 uuid를 삭제하는 서비스 메서드 호출
-        boolean result = movieService.removeImg(nuuid);
+            //이미지 이름만 잘라내기
+            String[] arr = encodedName.split("_");
+            String imgName = arr[1];
+
+            //서비스 호출
+            movieService.removeImg(imgName);
+
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
 
         log.info(">>>>>>>>>>>>>>>>>>>>>> [C] removeImg() -- complete img data delete !!!  ");
 

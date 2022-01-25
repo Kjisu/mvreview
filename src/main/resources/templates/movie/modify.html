@@ -16,6 +16,10 @@
 
     <form>
 
+        <!--새로 등록된 이미지 데이터 태그 붙일 곳 -->
+        <div class="box">
+        </div>
+
         <input type="hidden" name="mno" th:value="${dto.mno}">
         <input type="hidden" name="page" th:value="${pageRequestDTO.page}">
         <input type="hidden" name="type" th:value="${pageRequestDTO.type}">
@@ -43,9 +47,9 @@
     <!--이미지-->
     <div class="uploadResult">
         <ul>
-            <li th:each="movieImage:${dto.imageDTOList}" th:data-file="${movieImage.getImageURL()}" th:data-uuid="${movieImage.uuid}">
+            <li th:each="movieImage:${dto.imageDTOList}" th:data-file="${movieImage.getImageURL()}" >
                 <div>
-                    <button type="button" th:data-file="${movieImage.getImageURL()}" class="btn-warning btn-sm">X</button>
+                    <button type="button" th:data-file="${movieImage.getImageURL()}" class="btn-warning btn-sm" th:data-imgName="${movieImage.imgName}">X</button>
                     <img th:if="${movieImage.path != null}"
                          th:src="|/display?fileName=${movieImage.getThumbnailURL()}|">
 
@@ -143,16 +147,17 @@
     var actionForm = $("form");
 
 
-    //삭제버튼 클릭시,
+    ///////////////////////////////////////////////////////////////////////////////////////////////삭제버튼 클릭시,
         $(".removeBtn").click(function(){
 
             if(!confirm("정말로 삭제하시겠습니까?")){
                 return;
             }
 
-            //모든 이미지 삭제
-            deleteServerImg();
+            //서버 폴더 내 모든 이미지 삭제
+            deleteImgInFolder();
 
+            //디비에서 게시글 삭제(+게시글 삭제 전에 관련 이미지 정보부터 삭제함)
             actionForm.attr("action","/movie/remove");
             actionForm.attr("method","post");
             actionForm.submit();
@@ -160,85 +165,226 @@
         });//end click()
 
 
-    //수정 버튼 클릭시,
-        $('.modifyBtn').click(function(){
-
-            if(!confirm('수정하시겠습니까?')){
-                return;
-            }
-
-            //+
-
-            actionForm.attr("action","/movie/remove")
-                      .attr("method","post")
-                      .submit();
-
-
-        });
-
-    //섬네일 이미지 삭제 버튼 클릭 시, 이미지 데이터(디비) + 서버 폴더 이미지 삭제
-    $(".uploadResult").on("click","li button",function(e){
-
-        var target = $(this);
-        var targetFile = target.data("file");
-        var targetLi = target.closest("li");
-        var targetUuid = target.data("uuid");
-
-        //디비에 있는 이미지 데이터 삭제
-        removeImgData(targetFile);
-
-        //서버폴더에 있는 이미지 삭제
-        removeImgAtStorage(targetFile, targetLi);
-
-      });//end on()
-
-
-
     //(함수) 서버 폴더 내의 모든 이미지(2개 이상) 삭제
-    function deleteImgInFolder(){
+        function deleteImgInFolder(){
 
-        $(".uploadResult li").each(function(index){
+            $(".uploadResult li").each(function(index){
 
-            console.log($(this).data("file"));
+                console.log($(this).data("file"));
 
-            var targetFile = $(this).data("file");
+                var targetFile = $(this).data("file");
 
-            $.post('/removeFile', {fileName: targetFile}, function(result){
+                $.post('/removeFile', {fileName: targetFile}, function(result){
 
-                console.log("서버폴더에서 이미지들 삭제 완료? >>>" + result);
+                    console.log("서버폴더에서 이미지들 삭제 완료? >>>" + result);
 
-            })
-        });
+                })
+            });
 
-      }
+          }
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////섬네일 이미지 "삭제 버튼" 클릭 시, 이미지 데이터(디비) + 서버 폴더 이미지 삭제
+        $(".uploadResult").on("click","li button",function(e){
+
+            var target = $(this);
+            var targetFile = target.data("file");
+            console.log("파일이름 ="+targetFile);
+            var targetLi = target.closest("li");
+
+            //디비에 있는 이미지 데이터 삭제
+            removeImgData(targetFile);
+
+            //서버폴더에 있는 이미지 삭제
+            removeImgAtStorage(targetFile, targetLi);
+
+          });//end on()
+
+
+    //(함수) 디비에서 이미지(1개) 객체 로우 삭제
+        function removeImgData(targetFile){
+
+            $.post('/movie/removeImg', {targetFile: targetFile}, function(result){
+
+                    console.log("이미지 데이터 삭제 완료? >>>" + result);
+
+                })
+        }
 
 
     //(함수) 서버폴더에서 이미지 1개 삭제
-    function removeImgAtStorage(targetFile, targetLi){
+        function removeImgAtStorage(targetFile, targetLi){
 
-        $.post('/removeFile', {fileName: targetFile}, function(result){
+            $.post('/removeFile', {fileName: targetFile}, function(result){
 
-                console.log("섬네일 삭제 완료? >>>" + result);
+                    console.log("섬네일 삭제 완료? >>>" + result);
 
-                if(result === true){
-                    targetLi.remove();
+                    if(result === true){
+                        targetLi.remove();
+                    }
+                })
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////새로운 이미지 추가 시,
+
+    //첨부파일 확장자 체크
+
+    //유효성 식
+    var regex = new RegExp("(.*?)\.(exe|sh|zip|alz|tiff)$");
+    //업로드 가능한 최대 용량
+    var maxSize = 10485760; //10MB
+
+    //유효성 체크(파일 확장자, 업로드 가능 용량) 함수
+        function checkExtension(fileName, fileSize){
+
+            //용량 체크
+            if(fileSize >= maxSize){
+                alert('파일 사이즈 초과입니다.');
+                return false;
+            }
+
+            //확장자 체크
+            if(regex.test(fileName)){
+                alert("해당 종류의 파일은 업로드 할 수 없습니다.");
+                return false;
+            }
+
+            return true;
+
+        }//end checkExtension()
+
+    //1. ajax로 첨부파일 서버 폴더에 저장
+    $(".custom-file-input").on("change",function(){
+
+        //파일 이름만 쪼개서 저장
+            var fileName = $(this).val().split("\\").pop();
+            $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
+
+            //이미지 업로드를 위해 파일 객체 생성
+            var formData = new FormData();
+
+            var inputFile = $(this);
+
+            var files = inputFile[0].files;//업로드한 파일들
+
+            var appended = false;//업로드 가능 여부 체크
+
+            for(var i=0;i<files.length;i++){
+
+                //파일 유효성 체크
+                if(!checkExtension(files[i].name,files[i].size)){
+                    return false;
                 }
-            })
-    }
 
-    //(함수) 디비에서 이미지 데이터 삭제
-    function removeImgData(targetUuid){
+                console.log(files[i]);
 
-        $.post('/movie/removeImg', {uuid: targetUuid}, function(result){
+                //이미지 데이터, 폼 객체에 붙이기
+                formData.append("uploadFiles",files[i]);
+                appended = true;
+            }
 
-                console.log("이미지 데이터 삭제 완료? >>>" + result);
+            //appended 값이 false라면 업로드하지 않는다
+            if(!appended){
+                return;
+            }
 
-            })
+            //???
+            for(var value of formData.values()){
+                console.log("???value = "+value);
+            }
+
+            //ajax 사용하여 이미지 업로드
+            $.ajax({
+                url: '/uploadAjax',
+                processData: false,
+                contentType: false,
+                data: formData,
+                type: 'POST',
+                dataType: 'json',
+                success: function(result){
+                    console.log("이미지 업로드 결과 >> "+result);
+                    showResult(result);//썸네일 띄우기
+                },
+                error: function(jqXHR, testStatus, errorThrown){
+                  console.log(testStatus);
+              }
+            });//end ajax
+
+    });//end on()
+
+
+    //이미지 업로드 후 섬네일 이미지 보여주는 함수
+        function showResult(uploadResultArr){
+
+            var uploadURL = $(".uploadResult ul");
+
+            var str = "";
+
+            $(uploadResultArr).each(function(i,obj){
+
+              //li태그의 data속성들은 <form>태그의 submit이 실행될 때 <form>태그의 내용물로 만들어져서 전송된다.
+              str += "<li data-name='"+obj.fileName+"' data-path='"+obj.folderPath+"' data-uuid='"+obj.uuid+"'>";
+              str += "<div>";
+              str += "<button type='button' data-file=\'"+obj.imageURL+"\'"
+              str += "class='btn-warning btn-sm'>X</button><br>";
+              str += "<img src='/display?fileName="+obj.thumbnailURL+"'>";
+              str += "</div>";
+              str += "</li>";
+
+            });//end each()
+
+            uploadURL.append(str);
+
+        }//end showResult()
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////수정(전체 게시글) 버튼 클릭시,
+        $(".btn-primary").on("click",function(e){
+
+            e.preventDefault();//submit 중단
+
+            //form태그에 이미지 정보 붙이기
+
+            var str = "";
+
+            $(".uploadResult li").each(function(i,obj){
+
+                var target = $(obj);
+
+                var name = target.data('name');
+                console.log("이미지 이름 >>>"+name);
+
+                //기존 이미지인 경우, 등록할 필요 없으니까 pass (해당 태그 삭제할 것)
+                if(name == null){
+                    return;
+                    //MovieDTO(mno=154, title=11111, imageDTOList=[MovieImageDTO(uuid=null, imgName=null, path=null), MovieImageDTO(uuid=9d9c1f7b-5aba-4e95-b3e5-68f8e368b633, img
+                    //이런식으로 넘어간다
+                }
+
+                //새로운 이미지 인 경우, 태그 붙이기
+                str += "<input type=hidden name='imageDTOList["+i+"].imgName' value='"+target.data('name')+"'>";
+                str += "<input type=hidden name='imageDTOList["+i+"].path' value='"+target.data('path')+"'>";
+                str += "<input type=hidden name='imageDTOList["+i+"].uuid' value='"+target.data('uuid')+"'>";
+
+            });//end each()
+
+
+            //form태그에 붙이고
+            $(".box").append(str);
+
+            //submit 실행
+            actionForm.attr("action","/movie/modify")
+                      .attr("method","post")
+                      .submit();
+
+        });//end on()
 
 
 
 
-    }
+
+
+
+
 
 
 

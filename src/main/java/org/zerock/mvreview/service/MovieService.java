@@ -25,6 +25,9 @@ public interface MovieService {
     /////////////////////////////////////////////////////////////////////// 조회 작업
     MovieDTO getMovie(Long mno);
 
+    /////////////////////////////////////////////////////////////////////// 수정
+    Long update(MovieDTO movieDTO);
+
     /////////////////////////////////////////////////////////////////////// 삭제
     void remove(Long mno);
 
@@ -48,6 +51,7 @@ public interface MovieService {
         hashMap.put("movie",movie);
 
         //MovieImageDTO리스트 -> MovieImage에 담기
+        //null이면 pass
         List<MovieImageDTO> imageDTOList = dto.getImageDTOList();
 
         //MovieImage 엔티티 담을 리스트 생성
@@ -56,7 +60,23 @@ public interface MovieService {
         //dto에 있던 데이터 -> 엔티티에 하나씩 옮겨담기
         if(imageDTOList != null && imageDTOList.size()>0){
 
-            imageDTOList.stream().map(movieImageDTO -> {
+            for(MovieImageDTO movieImageDTO:imageDTOList){
+
+                if(movieImageDTO.getImgName() != null){
+
+                    MovieImage movieImage = MovieImage.builder()
+                            .uuid(movieImageDTO.getUuid())
+                            .imgName(movieImageDTO.getImgName())
+                            .path(movieImageDTO.getPath())
+                            .movie(movie)
+                            .build();
+
+                    movieImageList.add(movieImage);
+                }
+
+            }
+
+            /*imageDTOList.stream().map(movieImageDTO -> {
 
                 //dto -> entity로 옮겨담기
                 MovieImage movieImage = MovieImage.builder()
@@ -71,11 +91,12 @@ public interface MovieService {
 
                 return movieImage;
 
-            }).collect(Collectors.toList());
+            }).collect(Collectors.toList());*/
         }
 
         //이미지 리스트를 map에 추가
         hashMap.put("imgList",movieImageList);
+        System.out.println("movieImageList??>>"+movieImageList);
 
         return hashMap;
 

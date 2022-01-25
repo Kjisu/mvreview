@@ -14,10 +14,8 @@ public interface MovieImageRepository extends JpaRepository<MovieImage,Long> {
     void deleteByMno(Long mno);
 
     //uuid가 같은 영화 이미지 삭제 쿼리
-    @Query("delete from MovieImage mi where mi.uuid =:uuid")
+    @Query("delete from MovieImage mi where mi.imgName =:imgName")
     @Modifying
-    @Transactional
-    void deleteByUuid(String uuid);
-
+    void deleteByImgName(String imgName);
 
 }

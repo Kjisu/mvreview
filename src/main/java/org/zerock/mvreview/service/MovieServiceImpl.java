@@ -104,6 +104,28 @@ public class MovieServiceImpl implements MovieService{
         return entityToDTO(movieEntity,movieImageList,avg,reviewCnt);
     }
 
+    /////////////////////////////////////////////////////////////////////////////////// 수정
+    @Override
+    public Long update(MovieDTO movieDTO) {
+
+        log.info(">>>>>>>>>>>>> [S] update()");
+
+        //dto->entity 변환
+        Map<String, Object> entityMap = dtoToEntity(movieDTO);
+
+        //맵에서 엔티티 꺼내서 쿼리 실행
+        Movie movie = (Movie)entityMap.get("movie");
+        List<MovieImage> imgList = (List)entityMap.get("imgList");
+
+        movieRepository.save(movie);
+        for(MovieImage movieImage:imgList){
+            movieImageRepository.save(movieImage);
+        }
+
+        return movie.getMno();
+    }
+
+
     /////////////////////////////////////////////////////////////////////////////////// 삭제
     @Override
     @Transactional
@@ -122,12 +144,13 @@ public class MovieServiceImpl implements MovieService{
 
     /////////////////////////////////////////////////////////////////////////////////// 영화 이미지 삭제작업
     @Override
-    public boolean removeImg(String uuid) {
+    @Transactional
+    public boolean removeImg(String imgName) {
 
         log.info(">>>>>>>>>>>>> [S] remove()");
 
-        //uuid가 같은 영화 이미지 제거
-        movieImageRepository.deleteByUuid(uuid);
+        //imgName이 같은 영화 이미지 로우 제거
+        movieImageRepository.deleteByImgName(imgName);
 
         return true;
     }
