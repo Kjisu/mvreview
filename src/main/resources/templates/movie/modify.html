@@ -98,7 +98,9 @@
     <!--수정,삭제 버튼-->
     <button type="button" class="btn btn-primary modifyBtn">수정하기</button>
     <button type="button" class="btn btn-danger removeBtn">삭제</button>
-
+    <a th:href="@{/movie/list(page=${pageRequestDTO.page}, type=${pageRequestDTO.type}, keyword=${pageRequestDTO.keyword})}">
+        <button type="button" class="btn btn-info listBtn">목록으로</button>
+    </a>
 
     <!--모달창 : 이미지 원본 보여주기 용도-->
     <div class="imageModal modal" tabindex="-2" role="dialog">
@@ -377,18 +379,6 @@
                       .submit();
 
         });//end on()
-
-
-
-
-
-
-
-
-
-
-
-
 
 
  });//end ready()

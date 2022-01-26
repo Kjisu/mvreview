@@ -75,23 +75,6 @@ public interface MovieService {
                 }
 
             }
-
-            /*imageDTOList.stream().map(movieImageDTO -> {
-
-                //dto -> entity로 옮겨담기
-                MovieImage movieImage = MovieImage.builder()
-                        .uuid(movieImageDTO.getUuid())
-                        .imgName(movieImageDTO.getImgName())
-                        .path(movieImageDTO.getPath())
-                        .movie(movie)
-                        .build();
-
-                //리스트에 추가
-                movieImageList.add(movieImage);
-
-                return movieImage;
-
-            }).collect(Collectors.toList());*/
         }
 
         //이미지 리스트를 map에 추가
